@@ -20,27 +20,31 @@ export const QuoteProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Load local quotes pool and refresh daily quote (with caching)
   const fetchQuotes = async () => {
     // 1) Load local quotes.json into pool used for randomization
+    let local: Quote[] = [];
     try {
-      const res = await fetch('/src/app/quotes.json');
+      const res = await fetch(new URL('../quotes.json', import.meta.url).href);
       const data = await res.json();
-      const local = Array.isArray(data) ? data.map((d: any) => ({ text: d.text, author: d.author })) : [];
+      local = Array.isArray(data) ? data.map((d: any) => ({ text: d.text, author: d.author })) : [];
       setLocalQuotes(local);
       setQuotes(local);
     } catch (e) {
       console.warn('[QuoteProvider] failed to load local quotes.json', e);
+      local = [];
       setLocalQuotes([]);
       setQuotes([]);
     }
 
     // 2) Fetch and cache the daily quote from API Ninjas (one per day)
-    await fetchDailyQuote();
+    // pass the freshly loaded local pool to avoid relying on async state update
+    await fetchDailyQuote(local);
   };
 
   // Fetch daily quote and cache it per-day in localStorage to avoid repeated API calls
-  const fetchDailyQuote = async () => {
+  const fetchDailyQuote = async (localPool?: Quote[]) => {
     const envKey = import.meta.env.VITE_QUOTES_API_KEY;
     const storedKey = typeof window !== 'undefined' ? localStorage.getItem('quotesApiKey') : null;
     const key = storedKey || envKey;
+    const local = Array.isArray(localPool) ? localPool : localQuotes;
     const api = 'https://api.api-ninjas.com/v2/quoteoftheday';
     const today = new Date().toISOString().slice(0, 10);
     const cacheKey = `dailyQuote:${today}`;
@@ -69,10 +73,10 @@ export const QuoteProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!key) {
       console.debug('[QuoteProvider] no API key present; using deterministic local daily quote');
       // fallback: pick deterministic local daily quote
-      if (localQuotes.length) {
-        const idx = stableIndexFromString(today, localQuotes.length);
-        setDailyQuote(localQuotes[idx]);
-        setCurrent(localQuotes[idx]);
+      if (local && local.length) {
+        const idx = stableIndexFromString(today, local.length);
+        setDailyQuote(local[idx]);
+        setCurrent(local[idx]);
       }
       return;
     }
@@ -86,10 +90,10 @@ export const QuoteProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (!res.ok) {
         console.warn('[QuoteProvider] daily quote fetch failed', res.status, res.statusText);
         // fallback to local deterministic quote
-        if (localQuotes.length) {
-          const idx = stableIndexFromString(today, localQuotes.length);
-          setDailyQuote(localQuotes[idx]);
-          setCurrent(localQuotes[idx]);
+        if (local && local.length) {
+          const idx = stableIndexFromString(today, local.length);
+          setDailyQuote(local[idx]);
+          setCurrent(local[idx]);
         }
         return;
       }
@@ -104,10 +108,10 @@ export const QuoteProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       if (!text) {
         console.warn('[QuoteProvider] daily quote response missing text, falling back to local');
-        if (localQuotes.length) {
-          const idx = stableIndexFromString(today, localQuotes.length);
-          setDailyQuote(localQuotes[idx]);
-          setCurrent(localQuotes[idx]);
+        if (local && local.length) {
+          const idx = stableIndexFromString(today, local.length);
+          setDailyQuote(local[idx]);
+          setCurrent(local[idx]);
         }
         return;
       }
@@ -120,10 +124,10 @@ export const QuoteProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       try { if (typeof window !== 'undefined') localStorage.setItem(cacheKey, JSON.stringify(q)); console.debug('[QuoteProvider] cached daily quote for', today); } catch (e) { console.debug('[QuoteProvider] failed to cache daily quote', e); }
     } catch (e) {
       console.error('[QuoteProvider] fetchDailyQuote failed', e);
-      if (localQuotes.length) {
-        const idx = stableIndexFromString(today, localQuotes.length);
-        setDailyQuote(localQuotes[idx]);
-        setCurrent(localQuotes[idx]);
+      if (local && local.length) {
+        const idx = stableIndexFromString(today, local.length);
+        setDailyQuote(local[idx]);
+        setCurrent(local[idx]);
       }
     }
   };
