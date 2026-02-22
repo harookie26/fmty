@@ -1,6 +1,9 @@
 import { ImageWithFallback } from './components/figma/ImageWithFallback';
 import { QuoteProvider } from './quote/QuoteContext';
 import DailyQuote from './components/DailyQuote';
+import corner1 from '../assets/images/corner1.png';
+import corner2 from '../assets/images/corner2.png';
+import floralSwirl from '../assets/images/floral-swirl.png';
 
 export default function App() {
   const unsplashBase =
@@ -11,7 +14,7 @@ export default function App() {
       <div className="relative size-full min-h-screen bg-gradient-to-br from-pink-200 via-rose-200 to-pink-300 flex items-center justify-center p-6 overflow-hidden">
       {/* Decorative images fixed to viewport corners */}
       <ImageWithFallback
-        src="/assets/images/corner1.png"
+        src={corner1}
         alt=""
         aria-hidden="true"
         className="fixed top-0 left-0 pointer-events-none opacity-100 z-10"
@@ -19,7 +22,7 @@ export default function App() {
       />
 
       <ImageWithFallback
-        src="/assets/images/corner2.png"
+        src={corner2}
         alt=""
         aria-hidden="true"
         className="fixed bottom-0 right-0 pointer-events-none opacity-100 z-10"
@@ -55,7 +58,7 @@ export default function App() {
             {/* Swirl: keep inside the card just below author */}
             <div className="mt-4 flex justify-center" aria-hidden="true">
               <ImageWithFallback
-                src="/assets/images/floral-swirl.png"
+                src={floralSwirl}
                 alt=""
                 className="opacity-90 object-contain pointer-events-none"
                 style={{ width: 'clamp(140px, 28%, 420px)', height: 'auto', filter: 'brightness(0) invert(0)' }}

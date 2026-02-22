@@ -1,7 +1,7 @@
 
-  # Floral Quote Webpage
+  # from me to you
 
-  This is a code bundle for Floral Quote Webpage. The original project is available at https://www.figma.com/design/OfceSqYCteZ3dhvI22TVoz/Floral-Quote-Webpage.
+  This is a code bundle for from me to you. The original project is available at https://www.figma.com/design/OfceSqYCteZ3dhvI22TVoz/Floral-Quote-Webpage.
 
   ## Running the code
 
