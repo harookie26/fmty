@@ -99,7 +99,7 @@ export const QuoteProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const key = storedKey || envKey;
     const local = Array.isArray(localPool) ? localPool : localQuotes;
     const api = 'https://api.api-ninjas.com/v2/quoteoftheday';
-    const today = new Date().toISOString().slice(0, 10);
+    const today = localDateISO();
     const cacheKey = `dailyQuote:${today}`;
 
     // Try cache first
@@ -198,7 +198,7 @@ export const QuoteProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return;
     }
     if (!quotes.length) return;
-    const today = new Date().toISOString().slice(0, 10);
+    const today = localDateISO();
     const idx = stableIndexFromString(today, quotes.length);
     setCurrent(quotes[idx]);
     try { updateMetaForQuote(quotes[idx]); } catch {}
@@ -243,7 +243,7 @@ export const QuoteProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const refreshDaily = () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = localDateISO();
     const cacheKey = `dailyQuote:${today}`;
 
     // If we already have the dailyQuote in memory, use it
@@ -305,6 +305,15 @@ export function setQuotesApi(url: string | null) {
     console.error('setQuotesApi failed', e);
   }
 }
+
+  // Use local (user) date in YYYY-MM-DD format for per-day cache keys
+  function localDateISO() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
 
 function stableIndexFromString(s: string, n: number) {
   let h = 0;
