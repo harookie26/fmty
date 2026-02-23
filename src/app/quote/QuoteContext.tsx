@@ -6,7 +6,7 @@ type QuoteContextValue = {
   quotes: Quote[];
   current: Quote | null;
   randomize: () => void;
-  refreshDaily: () => void;
+  refreshDaily: (force?: boolean) => Promise<void>;
 };
 
 const QuoteContext = createContext<QuoteContextValue | undefined>(undefined);
@@ -242,41 +242,72 @@ export const QuoteProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const refreshDaily = () => {
+  const refreshDaily = async (force = false) => {
     const today = localDateISO();
     const cacheKey = `dailyQuote:${today}`;
+    const refreshedKey = `dailyQuoteRefreshed:${today}`;
 
     // If we already have the dailyQuote in memory, use it
-    if (dailyQuote) {
+    if (dailyQuote && !force) {
       setCurrent(dailyQuote);
       return;
     }
 
-    // Check per-day cache first to avoid unnecessary API calls
-    try {
-      const cached = typeof window !== 'undefined' ? localStorage.getItem(cacheKey) : null;
-      if (cached) {
-        const parsed = JSON.parse(cached) as Quote;
-        const text = parsed && typeof parsed.text === 'string' ? parsed.text.trim() : '';
-        if (text) {
-          setDailyQuote(parsed);
-          setCurrent(parsed);
-          console.debug('[QuoteProvider] refreshDaily used cached quote for', today);
-          return;
+    // If not forcing, check per-day cache first to avoid unnecessary API calls
+    if (!force) {
+      try {
+        const cached = typeof window !== 'undefined' ? localStorage.getItem(cacheKey) : null;
+        if (cached) {
+          const parsed = JSON.parse(cached) as Quote;
+          const text = parsed && typeof parsed.text === 'string' ? parsed.text.trim() : '';
+          if (text) {
+            setDailyQuote(parsed);
+            setCurrent(parsed);
+            console.debug('[QuoteProvider] refreshDaily used cached quote for', today);
+            return;
+          }
+          try { if (typeof window !== 'undefined') localStorage.removeItem(cacheKey); } catch {}
         }
-        try { if (typeof window !== 'undefined') localStorage.removeItem(cacheKey); } catch {}
+      } catch (e) {
+        // ignore
       }
-    } catch (e) {
-      // ignore
     }
 
-    // No cached daily quote — fall back to fetching (which will cache it)
+    // If forcing, allow only one forced refresh per local day
+    if (force) {
+      try {
+        const already = typeof window !== 'undefined' ? localStorage.getItem(refreshedKey) : null;
+        if (already) {
+          // If we've already forced a refresh today, prefer cached value if present
+          try {
+            const cached = typeof window !== 'undefined' ? localStorage.getItem(cacheKey) : null;
+            if (cached) {
+              const parsed = JSON.parse(cached) as Quote;
+              const text = parsed && typeof parsed.text === 'string' ? parsed.text.trim() : '';
+              if (text) {
+                setDailyQuote(parsed);
+                setCurrent(parsed);
+                console.debug('[QuoteProvider] refreshDaily: already forced today, used cached for', today);
+                return;
+              }
+            }
+          } catch {}
+          // otherwise fall through to attempt fetch once more
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    // No cached daily quote or force requested — fall back to fetching (which will cache it)
     const storedApi = typeof window !== 'undefined' ? localStorage.getItem('quotesApi') : null;
     const envApi = import.meta.env.VITE_QUOTES_API;
     const defaultApi = 'https://api.api-ninjas.com/v2/quoteoftheday';
     const api = storedApi || envApi || defaultApi;
     if (api && api.includes('api-ninjas.com')) {
-      fetchQuotes();
+      await fetchDailyQuote(localQuotes.length ? localQuotes : undefined);
+      // mark that we've refreshed today (so forced refresh is limited to once per local day)
+      try { if (typeof window !== 'undefined') localStorage.setItem(refreshedKey, Date.now().toString()); } catch (e) {}
       return;
     }
 
