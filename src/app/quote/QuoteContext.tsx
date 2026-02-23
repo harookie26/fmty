@@ -186,7 +186,20 @@ export const QuoteProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   useEffect(() => {
-    fetchQuotes();
+    (async () => {
+      await fetchQuotes();
+      try {
+        if (typeof window !== 'undefined') {
+          const refreshedKey = `dailyQuoteRefreshed:${localDateISO()}`;
+          if (!localStorage.getItem(refreshedKey)) {
+            // attempt one forced refresh on first load per local day
+            await refreshDaily(true);
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+    })();
   }, []);
 
   useEffect(() => {
