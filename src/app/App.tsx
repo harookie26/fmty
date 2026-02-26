@@ -4,6 +4,7 @@ import DailyQuote from './components/DailyQuote';
 import corner1 from '../assets/images/corner1.png';
 import corner2 from '../assets/images/corner2.png';
 import floralSwirl from '../assets/images/floral-swirl.png';
+import { Analytics } from "@vercel/analytics/react"
 
 export default function App() {
   const unsplashBase =
@@ -68,6 +69,7 @@ export default function App() {
 
         </div>
       </div>
+      <Analytics />
       </div>
     </QuoteProvider>
   );
