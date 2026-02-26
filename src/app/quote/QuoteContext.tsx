@@ -102,6 +102,22 @@ export const QuoteProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const today = localDateISO();
     const cacheKey = `dailyQuote:${today}`;
 
+    // Clear existing per-day cache once per local day before attempting fetch.
+    // This ensures we attempt a fresh fetch at most once per day.
+    try {
+      const clearedKey = `dailyQuoteCacheCleared:${today}`;
+      if (typeof window !== 'undefined') {
+        const alreadyCleared = localStorage.getItem(clearedKey);
+        if (!alreadyCleared) {
+          try { localStorage.removeItem(cacheKey); } catch (e) {}
+          try { localStorage.setItem(clearedKey, Date.now().toString()); } catch (e) {}
+          console.debug('[QuoteProvider] cleared daily quote cache for', today);
+        }
+      }
+    } catch (e) {
+      console.debug('[QuoteProvider] failed to clear daily quote cache', e);
+    }
+
     // Try cache first
     try {
       const cached = typeof window !== 'undefined' ? localStorage.getItem(cacheKey) : null;
